@@ -1,0 +1,2 @@
+ID,n_layer,ELM_eps,ELF_eps,ELF_shape,ELF_d,ELF_h,ELF_ori,ELF_initC,ELF_grad,OLM_eps,OLF_eps,OLF_shape,OLF_d,OLF_h,OLF_ori,OLF_initC,OLF_grad
+1,5,3.2,10,0,3,0,0,0.05,0.01,2.5,11,2,10,2,0,0.05,0.01
