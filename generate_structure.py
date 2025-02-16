@@ -8,6 +8,7 @@ from generate_2D_random import generate_2D_random_model
 from visualize_model import visualize_nlayer_model
 import numpy as np
 import os
+import time
 
 nx = 256
 ny = 256
@@ -66,7 +67,7 @@ if dataframe is not None:
         phimo = np.zeros((nx, ny, nz), dtype=int)
         phifo = np.zeros((nx, ny, nz), dtype=int)
 
-
+        start_time_1 = time.time()
 
         # 1层情况
         if obj.n_layer == 1:
@@ -92,11 +93,14 @@ if dataframe is not None:
             phimo[:, :, 146:183], phifo[:, :, 146:183] = calculate_layers_phi(nx, ny, 1, layers)
             phime[:, :, 183:219], phife[:, :, 183:219] = calculate_layers_phi(nx, ny, 2, layers)
             phimo[:, :, 219:256], phifo[:, :, 219:256] = calculate_layers_phi(nx, ny, 3, layers)
+
+        end_time_1 = time.time()
+        execution_time_1 = end_time_1 - start_time_1
+        print(f"生成结构数据的总执行时间: {execution_time_1:.6f} 秒")
         # 可视化
-        visualize_nlayer_model(phime, phife, phimo, phifo)
+        #visualize_nlayer_model(phime, phife, phimo, phifo)
 
-
-
+        start_time_2 = time.time()
         # 输出结构
         # nx, ny, nz, phime, phife, phimo, phifo,未命名为obj.ID
         # 或者在前几行先输出基体相和填料相的物理参数，在fortran读的时候先读物理参数，再读取结构
@@ -118,3 +122,7 @@ if dataframe is not None:
                     for k in range(nz):
                         # 格点坐标为 (i, j, k) 对应的值
                         f.write(f"{i} {j} {k} {phime[i, j, k]} {phife[i, j, k]} {phimo[i, j, k]} {phifo[i, j, k]}\n")
+
+            end_time_2 = time.time()
+            execution_time_2 = end_time_2 - start_time_2
+            print(f"输出结构文件的执行时间: {execution_time_2:.6f} 秒")

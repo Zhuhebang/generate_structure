@@ -1,67 +1,94 @@
 from visualize_model import visualize_onelayer_model
 import numpy as np
 import matplotlib.pyplot as plt
+import time
 
 
 def generate_2D_flat_model(nx, ny, nz, diameter, h, C):
-    radius = diameter / 2  # 计算半径
+    radius = diameter / 2
     volume = nx * ny * nz
     volume_filler = volume * C
-    n_cylinders = int(volume_filler / (np.pi * radius ** 2 * h))  # 计算理论上的圆柱体数量，但这里只是估算
+    n_cylinders = int(volume_filler / (np.pi * radius ** 2 * h))
+
+    print("————generate_2D_flat————")
+    print(f"该层的三维空间维度: {nx} x {ny} x {nz}")
+    print(f"片的直径: {diameter}")
+    print(f"片的厚度: {h}")
+    print(f"体积分数: {C:.2%}")
+    print(f"片数量: {n_cylinders}")
+    # input("按回车键继续...")
 
     phim = np.zeros((nx, ny, nz), dtype=int)
     phif = np.zeros((nx, ny, nz), dtype=int)
 
     max_attempts = 10000
+    iteration_count = 0
+    cylinders_count = []
+    iterations_count = []
+    times = []
+
+    start_time = time.time()
+    placed_cylinders = 0
 
     for _ in range(n_cylinders):
         for attempt in range(max_attempts):
-            # 随机生成圆柱体中心，确保圆柱体完全在空间内
+            iteration_count += 1
             center_x = np.random.uniform(radius, nx - radius)
             center_y = np.random.uniform(radius, ny - radius)
             center_z = np.random.uniform(h / 2, nz - h / 2)
-            center = np.array([center_x, center_y, center_z])
 
-            # 检查新圆柱体是否与已有的圆柱体重叠
-            overlap = False
-            for i in range(nx):
-                for j in range(ny):
-                    for k in range(nz):
-                        if phif[i, j, k] == 1:  # 检查已填充的点
-                            dist = np.sqrt((i - center_x) ** 2 + (j - center_y) ** 2)
-                            if dist <= radius and abs(k - center_z) <= h / 2:  # 使用浮点数比较
-                                overlap = True
-                                break
-                    if overlap:
-                        break
-                if overlap:
-                    break
+            # 使用布尔索引优化重叠检测
+            x, y, z = np.indices((nx, ny, nz))
+            mask = ((x - center_x) ** 2 + (y - center_y) ** 2 <= radius ** 2) & \
+                   (np.abs(z - center_z) <= h / 2)
 
-            if not overlap:
-                # 标记填料相
-                for i in range(nx):
-                    for j in range(ny):
-                        dist = np.sqrt((i - center_x) ** 2 + (j - center_y) ** 2)
-                        if dist <= radius:
-                            z_start = max(0, int(center_z - h / 2))
-                            z_end = min(nz, int(center_z + h / 2))
-                            for k in range(z_start, z_end):
-                                phif[i, j, k] = 1
+            if not np.any(phif[mask]):  # 如果没有重叠
+                phif[mask] = 1
+                placed_cylinders += 1
                 break
-            if attempt == max_attempts - 1:
-                print(f"Warning: Failed to place all cylinders. Only placed {_} of {n_cylinders}.")
-                break
+
+        # if placed_cylinders % 10 == 0 and placed_cylinders > 0:
+        #     current_time = time.time()
+        #     elapsed_time = current_time - start_time
+        #     cylinders_count.append(placed_cylinders)
+        #     iterations_count.append(iteration_count)
+        #     times.append(elapsed_time)
+        #     print(f"已放置 {placed_cylinders} 个片 - 已用时间: {elapsed_time:.4f} 秒, 迭代次数: {iteration_count}")
+
+    end_time = time.time()
+    print(f"该层总迭代次数: {iteration_count}")
+    print(f"该层总运行时间: {end_time - start_time:.4f} 秒")
+
+    # 绘制折线图
+    # fig, ax1 = plt.subplots()
+    # color = 'tab:red'
+    # ax1.set_xlabel('Number of Cylinders')
+    # ax1.set_ylabel('Iterations', color=color)
+    # ax1.plot(cylinders_count, iterations_count, color=color)
+    # ax1.tick_params(axis='y', labelcolor=color)
+    #
+    # ax2 = ax1.twinx()
+    # color = 'tab:blue'
+    # ax2.set_ylabel('Run Time (seconds)', color=color)
+    # ax2.plot(cylinders_count, times, color=color)
+    # ax2.tick_params(axis='y', labelcolor=color)
+    #
+    # fig.tight_layout()
+    # plt.title('Relationship Between Number of Cylinders, Iterations, and Run Time')
+    # plt.show()
 
     phim = 1 - phif
     return phim, phif
 
 
-
 if __name__ == '__main__':
-    nx, ny, nz = 50, 50, 30
-    diameter = 10  # 圆柱底面直径（比h大）
-    h = 2  # 圆柱高度
-    C = 0.05  # 填充系数
+    nx, ny, nz = 256, 256, 256
+    diameter = 50
+    h = 2
+    C = 0.05
 
+    start_time_total = time.time()
     phim, phif = generate_2D_flat_model(nx, ny, nz, diameter, h, C)
-    visualize_onelayer_model(phim, phif)
+    end_time_total = time.time()
+    print(f"总体运行时间: {end_time_total - start_time_total:.4f} 秒")
+    # visualize_onelayer_model(phim, phif)
